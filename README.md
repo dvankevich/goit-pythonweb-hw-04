@@ -30,6 +30,10 @@ src_dir/
 
 ```
 ## run script
+```
+usage: main.py [-h] [-d DSTDIR] [-v] srcdir
+```
+
 ```bash
 python main.py src_dir/ -d dst_dir
 ```

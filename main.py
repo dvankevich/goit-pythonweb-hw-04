@@ -52,16 +52,20 @@ async def copy_file(src: Path, dst: Path):
         logger.error(f"Failed to copy {src}: {e}")
 
 async def read_folder(srcdir: Path, dstdir: Path):
+    tasks = []
     async for path in srcdir.iterdir():
         if await path.is_dir():
-            await read_folder(path, dstdir)
+            tasks.append(read_folder(path, dstdir))
         else:
-            await copy_file(path, dstdir)
+            tasks.append(copy_file(path, dstdir))
+    
+    if tasks:
+        await asyncio.gather(*tasks)
 
 async def main():
     parser = argparse.ArgumentParser(description="Recursive file copier.")
     parser.add_argument("srcdir", type=str, help="source directory")
-    parser.add_argument("-d", "--dstdir", type=str, default="dist", help="destination directory")
+    parser.add_argument("-d", "--dstdir", type=str, default="dst_dir", help="destination directory")
     parser.add_argument("-v", "--verbose", action="store_true", help="show progress logs")
 
     args = parser.parse_args()

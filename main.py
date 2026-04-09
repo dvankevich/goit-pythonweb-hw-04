@@ -27,12 +27,15 @@ async def validate_destination(dst_path):
         async for _ in dst_path.iterdir():
             raise OSError(errno.ENOTEMPTY, f"{dst_path} is not empty")
 
-async def copy_file(src: Path, dst: Path):
+async def copy_file(src: Path, dst: Path, src_root: Path, fullpath: bool):
     file_name = src.name
     file_ext = src.suffix[1:].lower() or "no_extension"
-    dir_name = src.parent
     
-    dst_dir = dst / file_ext / Path(*dir_name.parts[1:]) 
+    if fullpath:
+        rel_path = src.parent.relative_to(src_root)
+        dst_dir = dst / file_ext / rel_path
+    else:
+        dst_dir = dst / file_ext
     
     if await dst_dir.exists():
         if await dst_dir.is_file():
@@ -43,7 +46,6 @@ async def copy_file(src: Path, dst: Path):
         logger.debug(f"Created directory: {await dst_dir.absolute()}")
 
     dst_file = dst_dir / file_name
-
     logger.info(f"Copying: {await src.absolute()} -> {await dst_file.absolute()}")
     
     try:
@@ -51,25 +53,31 @@ async def copy_file(src: Path, dst: Path):
     except Exception as e:
         logger.error(f"Failed to copy {src}: {e}")
 
-async def read_folder(srcdir: Path, dstdir: Path):
+async def read_folder(srcdir: Path, dstdir: Path, src_root: Path, fullpath: bool):
     tasks = []
     async for path in srcdir.iterdir():
         if await path.is_dir():
-            tasks.append(read_folder(path, dstdir))
+            tasks.append(read_folder(path, dstdir, src_root, fullpath))
         else:
-            tasks.append(copy_file(path, dstdir))
+            tasks.append(copy_file(path, dstdir, src_root, fullpath))
     
     if tasks:
         await asyncio.gather(*tasks)
 
 async def main():
-    parser = argparse.ArgumentParser(description="Recursive file copier.")
+    parser = argparse.ArgumentParser(description="Recursive concurrent file copier.")
     parser.add_argument("srcdir", type=str, help="source directory")
     parser.add_argument("-d", "--dstdir", type=str, default="dst_dir", help="destination directory")
     parser.add_argument("-v", "--verbose", action="store_true", help="show progress logs")
+    parser.add_argument(
+        "-f", "--fullpath", 
+        action="store_true", 
+        help="create original subdirectory structure in destination"
+    )
 
     args = parser.parse_args()
 
+    # Рівень логування
     if args.verbose:
         log_level = logging.INFO
     else:
@@ -89,7 +97,7 @@ async def main():
         await validate_source(src_path)
         await validate_destination(dst_path)
         
-        await read_folder(src_path, dst_path)
+        await read_folder(src_path, dst_path, src_path, args.fullpath)
 
     except Exception as e:
         logger.critical(f"CRITICAL ERROR: {e}")
@@ -99,5 +107,5 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.critical("Process interrupted by user")
+        logger.critical("\nProcess interrupted by user")
         sys.exit(130)

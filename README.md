@@ -31,14 +31,54 @@ src_dir/
 ```
 ## run script
 ```
-usage: main.py [-h] [-d DSTDIR] [-v] srcdir
+usage: main.py [-h] [-d DSTDIR] [-v] [-f] srcdir
+
+Recursive concurrent file copier.
+
+positional arguments:
+  srcdir               source directory
+
+options:
+  -h, --help           show this help message and exit
+  -d, --dstdir DSTDIR  destination directory
+  -v, --verbose        show progress logs
+  -f, --fullpath       create original subdirectory structure in destination
+
 ```
 
 ```bash
 python main.py src_dir/ -d dst_dir
 ```
+```
+tree dst_dir/ | head -n20
+dst_dir/
+├── avi
+│   ├── arm.avi
+│   ├── artist.avi
+│   ├── country.avi
+│   ├── design.avi
+│   ├── gun.avi
+│   ├── language.avi
+│   ├── listen.avi
+│   ├── message.avi
+│   ├── most.avi
+│   ├── policy.avi
+│   ├── represent.avi
+│   ├── response.avi
+│   ├── test.avi
+│   └── western.avi
+├── bmp
+│   ├── behind.bmp
+│   ├── foreign.bmp
+│   ├── nearly.bmp
 
-### destination dir example
+```
+
+### run with --fullpath option
+```bash
+python main.py -f src_dir/ -d dst_dir
+```
+
 ```
 tree dst_dir/ | head -n30
 dst_dir/
